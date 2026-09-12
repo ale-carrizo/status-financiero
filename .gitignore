@@ -8,3 +8,5 @@ build/
 *.log
 .DS_Store
 data/
+.railway/
+.railway-config-pull-*/
