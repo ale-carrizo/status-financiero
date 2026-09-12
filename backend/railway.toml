@@ -1,0 +1,6 @@
+[deploy]
+# Corre desde la raíz del repo (el servicio no tiene rootDirectory), por eso
+# se invoca vía workspace: npm entra a backend/ y ahí resuelve prisma/schema.prisma.
+releaseCommand = "npm run db:push --workspace=backend"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30

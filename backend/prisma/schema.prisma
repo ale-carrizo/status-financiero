@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BankProfile {
+  VISA_SANTANDER
+  AMEX_SANTANDER
+  MASTERCARD_GALICIA
+  VISA_GALICIA
+}
+
+enum Category {
+  EMPRESA
+  PERSONAL
+  IMPUESTO
+  EXCLUIDO
+  SIN_CLASIFICAR
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+
+  @@map("users")
+}
+
+model CardAccount {
+  id           String      @id @default(uuid())
+  label        String
+  bank_profile BankProfile
+  card_number  String?
+  is_active    Boolean     @default(true)
+  created_at   DateTime    @default(now())
+
+  statements       Statement[]
+  rules            ClassificationRule[]
+  planned_purchases PlannedPurchase[]
+
+  @@map("card_accounts")
+}
+
+model Statement {
+  id              String   @id @default(uuid())
+  card_account_id String
+  period_label    String
+  closing_date    DateTime
+  due_date        DateTime
+  total_ars       Decimal  @db.Decimal(14, 2) @default(0)
+  total_usd       Decimal  @db.Decimal(14, 2) @default(0)
+  raw_file_path   String
+  raw_file_name   String?
+  parsed_at       DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  card_account CardAccount   @relation(fields: [card_account_id], references: [id])
+  transactions Transaction[]
+
+  @@index([card_account_id, period_label])
+  @@map("statements")
+}
+
+model Transaction {
+  id              String    @id @default(uuid())
+  statement_id    String
+  fecha           DateTime?
+  descripcion     String
+  cardholder      String?
+  cuota_actual    Int?
+  cuota_total     Int?
+  monto_ars       Decimal   @db.Decimal(14, 2) @default(0)
+  monto_usd       Decimal   @db.Decimal(14, 2) @default(0)
+  category        Category  @default(SIN_CLASIFICAR)
+  matched_rule_id String?
+  manual_override Boolean   @default(false)
+  concept_label   String?
+  created_at      DateTime  @default(now())
+
+  statement Statement           @relation(fields: [statement_id], references: [id], onDelete: Cascade)
+  rule      ClassificationRule? @relation(fields: [matched_rule_id], references: [id])
+
+  @@index([statement_id])
+  @@index([category])
+  @@map("transactions")
+}
+
+model ClassificationRule {
+  id               String    @id @default(uuid())
+  keyword          String
+  concept_label    String
+  category         Category
+  card_account_id  String?
+  priority         Int       @default(0)
+  active           Boolean   @default(true)
+  created_at       DateTime  @default(now())
+
+  card_account CardAccount?  @relation(fields: [card_account_id], references: [id])
+  transactions Transaction[]
+
+  @@index([active])
+  @@map("classification_rules")
+}
+
+model PlannedPurchase {
+  id                 String   @id @default(uuid())
+  card_account_id    String
+  descripcion        String
+  monto_total        Decimal  @db.Decimal(14, 2)
+  cuotas             Int
+  first_charge_month String
+  created_at         DateTime @default(now())
+
+  card_account CardAccount @relation(fields: [card_account_id], references: [id])
+
+  @@map("planned_purchases")
+}
