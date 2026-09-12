@@ -30,8 +30,8 @@ export default async function StatementDetailPage({ params }: { params: Promise<
         </div>
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card overflow-x-auto">
+        <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-slate-50 text-left text-slate-500 text-xs uppercase">
             <tr>
               <th className="px-4 py-2">Fecha</th>
