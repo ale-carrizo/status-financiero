@@ -4,6 +4,7 @@ import { formatMonto, formatPeriod } from '@/lib/format';
 import type { CardAccount, PlannedPurchase, ProjectionMonth } from '@/lib/types';
 import { createPlannedPurchase } from './actions';
 import DeletePurchaseButton from './DeletePurchaseButton';
+import AutoSubmitSelect from '@/lib/AutoSubmitSelect';
 
 export default async function ProjectionsPage({
   searchParams,
@@ -33,9 +34,9 @@ export default async function ProjectionsPage({
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Proyecciones</h1>
         <form className="flex gap-2" action="/projections">
-          <select name="card_account_id" defaultValue={activeCardId} className="input w-auto" onChange={(e) => e.currentTarget.form?.submit()}>
+          <AutoSubmitSelect name="card_account_id" defaultValue={activeCardId} className="input w-auto">
             {cards.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
+          </AutoSubmitSelect>
         </form>
       </div>
 

@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { formatMonto } from '@/lib/format';
 import type { CardAccount } from '@/lib/types';
 import Link from 'next/link';
+import AutoSubmitSelect from '@/lib/AutoSubmitSelect';
 
 type HistoryRow = {
   statement_id: string;
@@ -30,12 +31,12 @@ export default async function HistoryPage({
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Historial</h1>
         <form className="flex gap-2" action="/history">
-          <select name="card_account_id" defaultValue={card_account_id || ''} className="input w-auto" onChange={(e) => e.currentTarget.form?.submit()}>
+          <AutoSubmitSelect name="card_account_id" defaultValue={card_account_id || ''} className="input w-auto">
             <option value="">Todas las tarjetas</option>
             {cards.map((c) => (
               <option key={c.id} value={c.id}>{c.label}</option>
             ))}
-          </select>
+          </AutoSubmitSelect>
         </form>
       </div>
 
