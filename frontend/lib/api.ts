@@ -57,6 +57,17 @@ export const api = {
   deletePlannedPurchase: (token: string, id: string) =>
     apiFetch(`/planned-purchases/${id}`, { method: 'DELETE' }, token),
 
+  getManualObligations: (token: string) => apiFetch('/manual-obligations', {}, token),
+  createManualObligation: (token: string, data: unknown) =>
+    apiFetch('/manual-obligations', { method: 'POST', body: JSON.stringify(data) }, token),
+  deleteManualObligation: (token: string, id: string) =>
+    apiFetch(`/manual-obligations/${id}`, { method: 'DELETE' }, token),
+  setManualObligationEntry: (token: string, id: string, data: unknown) =>
+    apiFetch(`/manual-obligations/${id}/entries`, { method: 'PUT', body: JSON.stringify(data) }, token),
+
+  getCashflow: (token: string, back?: number, forward?: number) =>
+    apiFetch(`/dashboard/cashflow?back=${back ?? 2}&forward=${forward ?? 4}`, {}, token),
+
   getDashboardSummary: (token: string, period: string) =>
     apiFetch(`/dashboard/summary?period=${period}`, {}, token),
   getDashboardHistory: (token: string, cardAccountId?: string) =>

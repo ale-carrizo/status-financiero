@@ -120,3 +120,37 @@ model PlannedPurchase {
 
   @@map("planned_purchases")
 }
+
+enum ObligationType {
+  LOAN
+  MANUAL_CARD
+}
+
+// Deudas/tarjetas sin parser automático (préstamos UVA, tarjetas de otros bancos) que se
+// cargan a mano mes a mes — mismo espíritu que la planilla de flujo de caja que ya usaba
+// el usuario, pero conviviendo en el dashboard con las tarjetas que sí parseamos.
+model ManualObligation {
+  id         String         @id @default(uuid())
+  label      String
+  type       ObligationType
+  is_active  Boolean        @default(true)
+  created_at DateTime       @default(now())
+
+  entries ManualObligationEntry[]
+
+  @@map("manual_obligations")
+}
+
+model ManualObligationEntry {
+  id            String   @id @default(uuid())
+  obligation_id String
+  period_label  String
+  monto_ars     Decimal  @db.Decimal(14, 2) @default(0)
+  monto_usd     Decimal  @db.Decimal(14, 2) @default(0)
+  updated_at    DateTime @updatedAt
+
+  obligation ManualObligation @relation(fields: [obligation_id], references: [id], onDelete: Cascade)
+
+  @@unique([obligation_id, period_label])
+  @@map("manual_obligation_entries")
+}

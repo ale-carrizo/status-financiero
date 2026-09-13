@@ -21,3 +21,9 @@ export function formatPeriod(period: string): string {
   ];
   return `${meses[parseInt(m, 10) - 1]} ${y}`;
 }
+
+export function formatPeriodShort(period: string): string {
+  const [y, m] = period.split('-');
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  return `${meses[parseInt(m, 10) - 1]} ${y.slice(2)}`;
+}

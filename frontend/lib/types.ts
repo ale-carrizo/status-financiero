@@ -73,6 +73,32 @@ export type DashboardSummary = {
   consolidated: CategoryTotals;
 };
 
+export type ObligationType = 'LOAN' | 'MANUAL_CARD';
+
+export type ManualObligation = {
+  id: string;
+  label: string;
+  type: ObligationType;
+  is_active: boolean;
+  entries: { id: string; period_label: string; monto_ars: number; monto_usd: number }[];
+};
+
+export type CashflowCell = { ars: number; usd: number; actual: boolean };
+
+export type CashflowRow = {
+  id: string;
+  label: string;
+  type: 'CARD_AUTO' | ObligationType;
+  cells: CashflowCell[];
+};
+
+export type Cashflow = {
+  months: string[];
+  rows: CashflowRow[];
+  totals: { ars: number; usd: number }[];
+  current_month: string;
+};
+
 export type ProjectionMonth = {
   month: string;
   ars: number;

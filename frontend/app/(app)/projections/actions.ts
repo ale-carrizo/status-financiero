@@ -20,3 +20,24 @@ export async function deletePlannedPurchase(id: string) {
   await api.deletePlannedPurchase(token, id);
   revalidatePath('/projections');
 }
+
+export async function createObligation(formData: FormData) {
+  const token = (await getToken())!;
+  await api.createManualObligation(token, {
+    label: formData.get('label'),
+    type: formData.get('type'),
+  });
+  revalidatePath('/projections');
+}
+
+export async function deleteObligation(id: string) {
+  const token = (await getToken())!;
+  await api.deleteManualObligation(token, id);
+  revalidatePath('/projections');
+}
+
+export async function setObligationEntry(obligationId: string, periodLabel: string, montoArs: number) {
+  const token = (await getToken())!;
+  await api.setManualObligationEntry(token, obligationId, { period_label: periodLabel, monto_ars: montoArs });
+  revalidatePath('/projections');
+}

@@ -1,7 +1,7 @@
 const express = require('express');
 const { prisma } = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
-const { computeProjections } = require('../lib/projections');
+const { computeProjections, monthLabel, addMonths } = require('../lib/projections');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -99,6 +99,81 @@ router.get('/projections', async (req, res) => {
   });
 
   res.json({ card_account_id, based_on_statement: latestStatement.id, projections });
+});
+
+// Flujo de caja consolidado: filas = tarjetas automáticas (parseadas) + préstamos/tarjetas
+// manuales, columnas = meses (pasado reciente + futuro). Para cada tarjeta automática, usa
+// el total real del Statement si existe para ese mes; si no, la proyección de cuotas
+// pendientes calculada a partir del último resumen cargado. Reemplaza la vista vieja de
+// "Proyecciones" por tarjeta, que ahora vive combinada acá.
+router.get('/cashflow', async (req, res) => {
+  const monthsBack = req.query.back ? parseInt(req.query.back, 10) : 2;
+  const monthsForward = req.query.forward ? parseInt(req.query.forward, 10) : 4;
+
+  const now = new Date();
+  const baseYear = now.getUTCFullYear();
+  const baseMonth = now.getUTCMonth();
+
+  const months = [];
+  for (let i = -monthsBack; i <= monthsForward; i++) {
+    const { year, monthIndex } = addMonths(baseYear, baseMonth, i);
+    months.push(monthLabel(year, monthIndex));
+  }
+
+  const rows = [];
+
+  const cardAccounts = await prisma.cardAccount.findMany({ where: { is_active: true }, orderBy: { label: 'asc' } });
+  for (const card of cardAccounts) {
+    const statements = await prisma.statement.findMany({
+      where: { card_account_id: card.id },
+      include: { transactions: true },
+      orderBy: { closing_date: 'desc' },
+    });
+    const plannedPurchases = await prisma.plannedPurchase.findMany({ where: { card_account_id: card.id } });
+
+    const actualByPeriod = {};
+    for (const s of statements) {
+      actualByPeriod[s.period_label] = { ars: Number(s.total_ars), usd: Number(s.total_usd), actual: true };
+    }
+
+    let projectedByPeriod = {};
+    const latest = statements[0];
+    if (latest) {
+      const proj = computeProjections({
+        transactions: latest.transactions,
+        plannedPurchases,
+        statementPeriodLabel: latest.period_label,
+        monthsAhead: monthsBack + monthsForward + 12,
+      });
+      for (const p of proj) projectedByPeriod[p.month] = { ars: p.ars, usd: p.usd, actual: false };
+    }
+
+    const cells = months.map(
+      (m) => actualByPeriod[m] || projectedByPeriod[m] || { ars: 0, usd: 0, actual: false }
+    );
+    rows.push({ id: card.id, label: card.label, type: 'CARD_AUTO', cells });
+  }
+
+  const obligations = await prisma.manualObligation.findMany({
+    where: { is_active: true },
+    include: { entries: true },
+    orderBy: [{ type: 'asc' }, { label: 'asc' }],
+  });
+  for (const ob of obligations) {
+    const byPeriod = {};
+    for (const e of ob.entries) byPeriod[e.period_label] = { ars: Number(e.monto_ars), usd: Number(e.monto_usd), actual: true };
+    const cells = months.map((m) => byPeriod[m] || { ars: 0, usd: 0, actual: false });
+    rows.push({ id: ob.id, label: ob.label, type: ob.type, cells });
+  }
+
+  const totals = months.map((m, i) =>
+    rows.reduce(
+      (acc, r) => ({ ars: acc.ars + r.cells[i].ars, usd: acc.usd + r.cells[i].usd }),
+      { ars: 0, usd: 0 }
+    )
+  );
+
+  res.json({ months, rows, totals, current_month: monthLabel(baseYear, baseMonth) });
 });
 
 module.exports = router;
