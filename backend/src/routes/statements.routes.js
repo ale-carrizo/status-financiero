@@ -65,7 +65,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(422).json({ error: 'No se pudo detectar la fecha de cierre en el PDF' });
     }
 
-    const period_label = periodLabelFromDate(parsed.closing_date);
+    const period_label = parsed.period_label_override || periodLabelFromDate(parsed.closing_date);
 
     const fileName = `${period_label}-${cardAccount.bank_profile}-${crypto.randomUUID()}.pdf`;
     const filePath = path.join(STATEMENTS_DIR, fileName);

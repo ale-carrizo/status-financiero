@@ -1,3 +1,9 @@
 const { parseSantanderStatement } = require('./santanderShared');
+const { parse: parseLegacy, isLegacyFormat } = require('./santanderLegacy');
 
-module.exports = { parse: parseSantanderStatement };
+function parse(text) {
+  if (isLegacyFormat(text)) return parseLegacy(text);
+  return parseSantanderStatement(text);
+}
+
+module.exports = { parse };
