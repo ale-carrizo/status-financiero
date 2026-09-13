@@ -38,6 +38,24 @@ const DATE_TOKEN_RE = /\d{2}-[A-Za-z]{3}-\d{2}/g;
 const BARE_AMOUNT_RE = /^-?[\d.]+,\d{2}$/;
 const FOREIGN_RE = /\([A-Za-z]+,\s*[A-Za-z]+,\s*[\d.,]+\)/;
 
+// El resumen repite este bloque de encabezado/pie al arrancar cada una de sus ~5 páginas
+// (incluso en medio de "DETALLE DEL CONSUMO"). Si no se filtra, "Resumen N° 027023238505"
+// o el CUIT terminan matcheando el regex de movimiento como si fueran comprobante+monto,
+// generando transacciones basura de millones de pesos.
+const NOISE_LINE_RE = new RegExp(
+  [
+    '^Resumen N',
+    '^Tarjeta Cr[eé]dito MASTERCARD',
+    '^\\s*MONOTRIBUTISTA',
+    '^BARRIO',
+    '^P[aá]gina\\s*\\d',
+    '^\\d{10,}H?$',
+    '^CARRIZO,',
+    '^INFORMACION (INSTITUCIONAL|DE LA ENTIDAD)$',
+  ].join('|'),
+  'i'
+);
+
 // Total a pagar: las 2 primeras líneas "sueltas" (solo número, sin letras) del documento,
 // antes de que aparezca la primera fecha "DD-Mon-YY" — son el monto grande en pesos y en
 // dólares que el banco muestra arriba de todo, repetido más abajo (partido en líneas) junto
@@ -75,6 +93,7 @@ function findPeriodo(lines) {
 const DUAL_AMOUNT_RE = /(-?[\d.]+,\d{2})(-?[\d.]+,\d{2})?\s*$/;
 
 function parseConsolidadoTaxLine(line) {
+  if (NOISE_LINE_RE.test(line)) return null;
   const m = DUAL_AMOUNT_RE.exec(line);
   if (!m) return null;
   const descripcion = line.slice(0, m.index).replace(/\s{2,}/g, ' ').trim();
@@ -105,6 +124,7 @@ const CONSUMO_LINE_RE = /^(\d{2}-[A-Za-z]{3}-\d{2})?(.*?)(?:\s(\d{2})\/(\d{2}))?
 
 function parseConsumoLine(line, fallbackDate) {
   if (!line) return null;
+  if (NOISE_LINE_RE.test(line)) return null;
   if (/^FECHA.*REFERENCIA/i.test(line)) return null;
   if (/^(COMPRAS DEL MES|DEBITOS AUTOMATICOS|CUOTA DEL MES)$/i.test(line)) return null;
 
