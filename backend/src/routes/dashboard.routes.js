@@ -2,6 +2,7 @@ const express = require('express');
 const { prisma } = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { computeProjections, monthLabel, addMonths } = require('../lib/projections');
+const { getRateForDate, getLatestRate } = require('../lib/fxRate');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -122,6 +123,15 @@ router.get('/cashflow', async (req, res) => {
 
   const rows = [];
 
+  // Convierte el monto en U$S de una celda a pesos con la cotización "comprador" del día de
+  // cierre real (si hay statement) o la más reciente disponible (proyecciones y obligaciones
+  // manuales, que no tienen una fecha de cierre propia).
+  async function withUsdArs(cell) {
+    if (!cell.usd) return { ...cell, usd_ars: 0 };
+    const rate = cell.closing_date ? await getRateForDate(cell.closing_date) : await getLatestRate();
+    return { ars: cell.ars, usd: cell.usd, actual: cell.actual, usd_ars: rate ? cell.usd * rate.compra : 0 };
+  }
+
   const cardAccounts = await prisma.cardAccount.findMany({ where: { is_active: true }, orderBy: { label: 'asc' } });
   for (const card of cardAccounts) {
     const statements = await prisma.statement.findMany({
@@ -133,7 +143,12 @@ router.get('/cashflow', async (req, res) => {
 
     const actualByPeriod = {};
     for (const s of statements) {
-      actualByPeriod[s.period_label] = { ars: Number(s.total_ars), usd: Number(s.total_usd), actual: true };
+      actualByPeriod[s.period_label] = {
+        ars: Number(s.total_ars),
+        usd: Number(s.total_usd),
+        actual: true,
+        closing_date: s.closing_date,
+      };
     }
 
     let projectedByPeriod = {};
@@ -148,8 +163,8 @@ router.get('/cashflow', async (req, res) => {
       for (const p of proj) projectedByPeriod[p.month] = { ars: p.ars, usd: p.usd, actual: false };
     }
 
-    const cells = months.map(
-      (m) => actualByPeriod[m] || projectedByPeriod[m] || { ars: 0, usd: 0, actual: false }
+    const cells = await Promise.all(
+      months.map((m) => withUsdArs(actualByPeriod[m] || projectedByPeriod[m] || { ars: 0, usd: 0, actual: false }))
     );
     rows.push({ id: card.id, label: card.label, type: 'CARD_AUTO', cells });
   }
@@ -162,14 +177,18 @@ router.get('/cashflow', async (req, res) => {
   for (const ob of obligations) {
     const byPeriod = {};
     for (const e of ob.entries) byPeriod[e.period_label] = { ars: Number(e.monto_ars), usd: Number(e.monto_usd), actual: true };
-    const cells = months.map((m) => byPeriod[m] || { ars: 0, usd: 0, actual: false });
+    const cells = await Promise.all(months.map((m) => withUsdArs(byPeriod[m] || { ars: 0, usd: 0, actual: false })));
     rows.push({ id: ob.id, label: ob.label, type: ob.type, cells });
   }
 
   const totals = months.map((m, i) =>
     rows.reduce(
-      (acc, r) => ({ ars: acc.ars + r.cells[i].ars, usd: acc.usd + r.cells[i].usd }),
-      { ars: 0, usd: 0 }
+      (acc, r) => ({
+        ars: acc.ars + r.cells[i].ars,
+        usd: acc.usd + r.cells[i].usd,
+        usd_ars: acc.usd_ars + r.cells[i].usd_ars,
+      }),
+      { ars: 0, usd: 0, usd_ars: 0 }
     )
   );
 

@@ -97,6 +97,7 @@ model ClassificationRule {
   concept_label    String
   category         Category
   card_account_id  String?
+  cardholder       String?
   priority         Int       @default(0)
   active           Boolean   @default(true)
   created_at       DateTime  @default(now())
@@ -140,6 +141,18 @@ model ManualObligation {
   entries ManualObligationEntry[]
 
   @@map("manual_obligations")
+}
+
+// Cache de la cotización oficial del dólar (valor comprador/vendedor) por día, para convertir
+// los montos en U$S de las tarjetas a pesos en el Flujo de Caja. Se completa on-demand
+// consultando una API externa (ver lib/fxRate.js) y se guarda para no volver a pedirla.
+model FxRate {
+  date    DateTime @id @db.Date
+  compra  Decimal  @db.Decimal(10, 2)
+  venta   Decimal  @db.Decimal(10, 2)
+  fetched_at DateTime @default(now())
+
+  @@map("fx_rates")
 }
 
 model ManualObligationEntry {

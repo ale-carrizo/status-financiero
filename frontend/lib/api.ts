@@ -50,6 +50,7 @@ export const api = {
     apiFetch(`/transactions?${new URLSearchParams(params).toString()}`, {}, token),
   updateTransaction: (token: string, id: string, data: unknown) =>
     apiFetch(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }, token),
+  getCardholders: (token: string): Promise<string[]> => apiFetch('/transactions/cardholders', {}, token),
 
   getPlannedPurchases: (token: string) => apiFetch('/planned-purchases', {}, token),
   createPlannedPurchase: (token: string, data: unknown) =>

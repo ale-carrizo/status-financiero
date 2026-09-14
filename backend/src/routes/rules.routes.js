@@ -14,21 +14,28 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { keyword, concept_label, category, card_account_id, priority } = req.body || {};
+  const { keyword, concept_label, category, card_account_id, cardholder, priority } = req.body || {};
   if (!keyword || !concept_label || !category) {
     return res.status(400).json({ error: 'keyword, concept_label y category son requeridos' });
   }
   const rule = await prisma.classificationRule.create({
-    data: { keyword, concept_label, category, card_account_id: card_account_id || null, priority: priority || 0 },
+    data: {
+      keyword,
+      concept_label,
+      category,
+      card_account_id: card_account_id || null,
+      cardholder: cardholder || null,
+      priority: priority || 0,
+    },
   });
   res.status(201).json(rule);
 });
 
 router.patch('/:id', async (req, res) => {
-  const { keyword, concept_label, category, card_account_id, priority, active } = req.body || {};
+  const { keyword, concept_label, category, card_account_id, cardholder, priority, active } = req.body || {};
   const rule = await prisma.classificationRule.update({
     where: { id: req.params.id },
-    data: { keyword, concept_label, category, card_account_id, priority, active },
+    data: { keyword, concept_label, category, card_account_id, cardholder, priority, active },
   });
   res.json(rule);
 });

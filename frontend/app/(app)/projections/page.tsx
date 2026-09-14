@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { getToken } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { formatArs, formatMonto, formatPeriod, formatPeriodShort } from '@/lib/format';
@@ -57,39 +58,69 @@ export default async function ProjectionsPage() {
                     {TYPE_LABEL[g.type]}
                   </td>
                 </tr>
-                {g.rows.map((r) => (
-                  <tr key={r.id} className="border-t border-slate-100">
-                    <td className="px-4 py-2 sticky left-0 bg-white whitespace-nowrap">
-                      {r.label}
-                      {r.type !== 'CARD_AUTO' && <DeleteObligationButton id={r.id} />}
-                    </td>
-                    {r.cells.map((c, i) =>
-                      r.type === 'CARD_AUTO' ? (
-                        <td
-                          key={i}
-                          className={`px-3 py-2 text-right whitespace-nowrap ${
-                            c.actual ? '' : 'text-slate-400 italic'
-                          }`}
-                        >
-                          {c.ars || c.usd ? formatMonto(c.ars, c.usd) : '—'}
+                {g.rows.map((r) => {
+                  const hasUsd = r.cells.some((c) => c.usd);
+                  return (
+                    <Fragment key={r.id}>
+                      <tr className="border-t border-slate-100">
+                        <td className="px-4 py-2 sticky left-0 bg-white whitespace-nowrap">
+                          {r.label}
+                          {r.type !== 'CARD_AUTO' && <DeleteObligationButton id={r.id} />}
                         </td>
-                      ) : (
-                        <td key={i} className="px-1 py-1 text-right">
-                          <EditableCell obligationId={r.id} periodLabel={cashflow.months[i]} value={c.ars} />
-                        </td>
-                      )
-                    )}
-                  </tr>
-                ))}
+                        {r.cells.map((c, i) =>
+                          r.type === 'CARD_AUTO' ? (
+                            <td
+                              key={i}
+                              className={`px-3 py-2 text-right whitespace-nowrap ${
+                                c.actual ? '' : 'text-slate-400 italic'
+                              }`}
+                            >
+                              {c.ars ? `$${formatArs(c.ars)}` : '—'}
+                            </td>
+                          ) : (
+                            <td key={i} className="px-1 py-1 text-right">
+                              <EditableCell obligationId={r.id} periodLabel={cashflow.months[i]} value={c.ars} />
+                            </td>
+                          )
+                        )}
+                      </tr>
+                      {hasUsd && (
+                        <tr className="border-t border-slate-100 bg-slate-50/40">
+                          <td className="px-4 py-1 pl-8 sticky left-0 bg-slate-50/40 whitespace-nowrap text-xs text-slate-500 italic">
+                            {r.label} (Dólares)
+                          </td>
+                          {r.cells.map((c, i) => (
+                            <td
+                              key={i}
+                              className={`px-3 py-1 text-right whitespace-nowrap text-xs ${
+                                c.actual ? 'text-slate-500' : 'text-slate-400 italic'
+                              }`}
+                            >
+                              {c.usd ? `$${formatArs(c.usd_ars)}` : '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             )
           )}
           <tbody>
             <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
-              <td className="px-4 py-2 sticky left-0 bg-slate-50">Total</td>
+              <td className="px-4 py-2 sticky left-0 bg-slate-50">Total ($)</td>
               {cashflow.totals.map((t, i) => (
                 <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
-                  {formatMonto(t.ars, t.usd)}
+                  ${formatArs(t.ars)}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-t border-slate-200 font-semibold bg-slate-50/60 text-slate-500 text-xs">
+              <td className="px-4 py-2 sticky left-0 bg-slate-50/60">Total U$S (en $)</td>
+              {cashflow.totals.map((t, i) => (
+                <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
+                  {t.usd_ars ? `$${formatArs(t.usd_ars)}` : '—'}
                 </td>
               ))}
             </tr>

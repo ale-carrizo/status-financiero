@@ -6,11 +6,13 @@ import { revalidatePath } from 'next/cache';
 export async function createRule(formData: FormData) {
   const token = (await getToken())!;
   const card_account_id = formData.get('card_account_id') as string;
+  const cardholder = formData.get('cardholder') as string;
   await api.createRule(token, {
     keyword: formData.get('keyword'),
     concept_label: formData.get('concept_label'),
     category: formData.get('category'),
     card_account_id: card_account_id || null,
+    cardholder: cardholder || null,
     priority: Number(formData.get('priority') || 0),
   });
   revalidatePath('/rules');

@@ -8,9 +8,10 @@ const CATEGORIES = ['EMPRESA', 'PERSONAL', 'IMPUESTO', 'EXCLUIDO', 'SIN_CLASIFIC
 
 export default async function RulesPage() {
   const token = (await getToken())!;
-  const [rules, cards]: [ClassificationRule[], CardAccount[]] = await Promise.all([
+  const [rules, cards, cardholders]: [ClassificationRule[], CardAccount[], string[]] = await Promise.all([
     api.getRules(token),
     api.getCards(token),
+    api.getCardholders(token),
   ]);
 
   return (
@@ -40,6 +41,13 @@ export default async function RulesPage() {
           </select>
         </div>
         <div>
+          <label className="block text-xs font-medium mb-1">Titular (opcional)</label>
+          <select name="cardholder" className="input">
+            <option value="">Todos</option>
+            {cardholders.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
           <label className="block text-xs font-medium mb-1">Prioridad</label>
           <input name="priority" type="number" defaultValue={0} className="input" />
         </div>
@@ -56,6 +64,7 @@ export default async function RulesPage() {
               <th className="px-4 py-2">Concepto</th>
               <th className="px-4 py-2">Categoría</th>
               <th className="px-4 py-2">Tarjeta</th>
+              <th className="px-4 py-2">Titular</th>
               <th className="px-4 py-2">Estado</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -69,6 +78,7 @@ export default async function RulesPage() {
                   <span className={`badge badge-${r.category.toLowerCase().replace('_', '-')}`}>{r.category}</span>
                 </td>
                 <td className="px-4 py-2 text-slate-500">{r.card_account?.label || 'Todas'}</td>
+                <td className="px-4 py-2 text-slate-500">{r.cardholder || 'Todos'}</td>
                 <td className="px-4 py-2 text-slate-500">{r.active ? 'Activa' : 'Inactiva'}</td>
                 <td className="px-4 py-2"><RuleRowActions id={r.id} active={r.active} /></td>
               </tr>

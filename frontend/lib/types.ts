@@ -45,6 +45,7 @@ export type ClassificationRule = {
   category: Category;
   card_account_id: string | null;
   card_account?: CardAccount | null;
+  cardholder: string | null;
   priority: number;
   active: boolean;
 };
@@ -83,7 +84,9 @@ export type ManualObligation = {
   entries: { id: string; period_label: string; monto_ars: number; monto_usd: number }[];
 };
 
-export type CashflowCell = { ars: number; usd: number; actual: boolean };
+// usd_ars = monto en U$S convertido a pesos con la cotización comprador del BCRA (ver
+// backend/src/lib/fxRate.js) — se muestra en una fila aparte, no sumado a "ars".
+export type CashflowCell = { ars: number; usd: number; usd_ars: number; actual: boolean };
 
 export type CashflowRow = {
   id: string;
@@ -95,7 +98,7 @@ export type CashflowRow = {
 export type Cashflow = {
   months: string[];
   rows: CashflowRow[];
-  totals: { ars: number; usd: number }[];
+  totals: { ars: number; usd: number; usd_ars: number }[];
   current_month: string;
 };
 

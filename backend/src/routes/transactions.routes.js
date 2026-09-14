@@ -25,6 +25,19 @@ router.patch('/:id', async (req, res) => {
   res.json(transaction);
 });
 
+// Titulares distintos ya vistos entre todas las transacciones parseadas, para poblar el
+// selector de "Titular" del formulario de reglas (nombres tal cual vienen de cada banco,
+// sin normalizar — cada tarjeta imprime el mismo titular con formato ligeramente distinto).
+router.get('/cardholders', async (req, res) => {
+  const rows = await prisma.transaction.findMany({
+    where: { cardholder: { not: null } },
+    distinct: ['cardholder'],
+    select: { cardholder: true },
+    orderBy: { cardholder: 'asc' },
+  });
+  res.json(rows.map((r) => r.cardholder).filter(Boolean));
+});
+
 router.get('/', async (req, res) => {
   const { statement_id, category } = req.query;
   const transactions = await prisma.transaction.findMany({

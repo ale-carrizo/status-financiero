@@ -1,7 +1,10 @@
 // Aplica las ClassificationRule (cargadas de la DB) sobre las transacciones recién parseadas
 // de un resumen. Reglas ordenadas por priority desc; la primera que matchea por keyword
 // (substring, case-insensitive) contra la descripción gana. Si la regla tiene card_account_id
-// seteado, solo aplica cuando el statement es de esa tarjeta.
+// seteado, solo aplica cuando el statement es de esa tarjeta; si tiene cardholder seteado,
+// solo aplica cuando el titular de la transacción coincide exacto (case-insensitive) — útil
+// para adicionales que pagan sus propios consumos y no deben heredar la clasificación del
+// titular principal.
 //
 // Si ninguna regla matchea, la transacción cae en PERSONAL por default — así no hay que
 // reclasificar a mano decenas de líneas de supermercado/combustible cada mes. Las reglas que
@@ -9,8 +12,14 @@
 // decidir si es gasto de empresa) para forzar revisión manual en casos puntuales.
 
 function applyRules(transaction, rules, cardAccountId) {
+  const cardholder = (transaction.cardholder || '').trim().toLowerCase();
   const applicable = rules
-    .filter((r) => r.active && (!r.card_account_id || r.card_account_id === cardAccountId))
+    .filter(
+      (r) =>
+        r.active &&
+        (!r.card_account_id || r.card_account_id === cardAccountId) &&
+        (!r.cardholder || r.cardholder.trim().toLowerCase() === cardholder)
+    )
     .sort((a, b) => b.priority - a.priority);
 
   const desc = (transaction.descripcion || '').toLowerCase();
