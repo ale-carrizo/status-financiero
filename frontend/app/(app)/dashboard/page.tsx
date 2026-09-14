@@ -1,8 +1,10 @@
 import { getToken } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { formatMonto, formatPeriod } from '@/lib/format';
-import type { DashboardSummary, Category } from '@/lib/types';
+import type { DashboardSummary, Category, CardAccount, CategoryTotals, Cashflow } from '@/lib/types';
 import Link from 'next/link';
+import CategoryTrendChart, { type MonthCategoryTotals } from './CategoryTrendChart';
+import CashflowChart, { type CashflowMonth } from './CashflowChart';
 
 const CATEGORY_ORDER: Category[] = ['EMPRESA', 'PERSONAL', 'IMPUESTO', 'EXCLUIDO', 'SIN_CLASIFICAR'];
 const CATEGORY_LABEL: Record<Category, string> = {
@@ -13,9 +15,40 @@ const CATEGORY_LABEL: Record<Category, string> = {
   SIN_CLASIFICAR: 'Sin clasificar',
 };
 
+type HistoryRow = {
+  statement_id: string;
+  period: string;
+  card_account: CardAccount;
+  total_ars: number;
+  total_usd: number;
+  totals: CategoryTotals;
+};
+
 function currentPeriod(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function aggregateCategoryTrend(history: HistoryRow[], monthsBack: number): MonthCategoryTotals[] {
+  const byPeriod = new Map<string, Record<Category, number>>();
+  for (const h of history) {
+    const cur = byPeriod.get(h.period) || { EMPRESA: 0, PERSONAL: 0, IMPUESTO: 0, EXCLUIDO: 0, SIN_CLASIFICAR: 0 };
+    for (const cat of CATEGORY_ORDER) cur[cat] += h.totals[cat]?.ars || 0;
+    byPeriod.set(h.period, cur);
+  }
+  return [...byPeriod.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-monthsBack)
+    .map(([period, totals]) => ({ period, ...totals }));
+}
+
+function toCashflowMonths(cashflow: Cashflow): CashflowMonth[] {
+  return cashflow.months.map((period, i) => ({
+    period,
+    ingresos: cashflow.incomeTotals[i].ars + cashflow.incomeTotals[i].usd_ars,
+    gastos: cashflow.totals[i].ars + cashflow.totals[i].usd_ars,
+    saldo: cashflow.balance[i].ars,
+  }));
 }
 
 export default async function DashboardPage({
@@ -35,6 +68,13 @@ export default async function DashboardPage({
     error = e instanceof Error ? e.message : 'Error cargando el dashboard';
   }
 
+  const [history, cashflow]: [HistoryRow[], Cashflow] = await Promise.all([
+    api.getDashboardHistory(token),
+    api.getCashflow(token, 5, 0),
+  ]);
+  const categoryTrend = aggregateCategoryTrend(history, 6);
+  const cashflowMonths = toCashflowMonths(cashflow);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -46,6 +86,27 @@ export default async function DashboardPage({
       </div>
 
       {error && <div className="card p-4 text-red-700 bg-red-50 border-red-200 mb-6">{error}</div>}
+
+      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+        <div className="card p-5">
+          <h3 className="font-semibold mb-1">Gastos por categoría</h3>
+          <p className="text-xs text-slate-500 mb-3">Últimos {categoryTrend.length} meses, en pesos.</p>
+          {categoryTrend.length > 0 ? (
+            <CategoryTrendChart data={categoryTrend} />
+          ) : (
+            <div className="text-sm text-slate-400 py-8 text-center">Sin datos todavía.</div>
+          )}
+        </div>
+        <div className="card p-5">
+          <h3 className="font-semibold mb-1">Flujo de caja</h3>
+          <p className="text-xs text-slate-500 mb-3">Ingresos, gastos y saldo por mes.</p>
+          {cashflowMonths.length > 0 ? (
+            <CashflowChart data={cashflowMonths} />
+          ) : (
+            <div className="text-sm text-slate-400 py-8 text-center">Sin datos todavía.</div>
+          )}
+        </div>
+      </div>
 
       {summary && summary.byCard.length === 0 && (
         <div className="card p-6 text-slate-500">
