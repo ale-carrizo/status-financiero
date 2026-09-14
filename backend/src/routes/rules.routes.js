@@ -15,13 +15,18 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { keyword, concept_label, category, card_account_id, cardholder, priority } = req.body || {};
-  if (!keyword || !concept_label || !category) {
-    return res.status(400).json({ error: 'keyword, concept_label y category son requeridos' });
+  if (!category) {
+    return res.status(400).json({ error: 'category es requerido' });
+  }
+  if (!keyword && !card_account_id && !cardholder) {
+    return res.status(400).json({
+      error: 'Elegí al menos un criterio: palabra clave, tarjeta o titular (si no, la regla aplicaría a TODO)',
+    });
   }
   const rule = await prisma.classificationRule.create({
     data: {
-      keyword,
-      concept_label,
+      keyword: keyword || null,
+      concept_label: concept_label || null,
       category,
       card_account_id: card_account_id || null,
       cardholder: cardholder || null,

@@ -5,11 +5,13 @@ import { revalidatePath } from 'next/cache';
 
 export async function createRule(formData: FormData) {
   const token = (await getToken())!;
+  const keyword = (formData.get('keyword') as string) || '';
+  const concept_label = (formData.get('concept_label') as string) || '';
   const card_account_id = formData.get('card_account_id') as string;
   const cardholder = formData.get('cardholder') as string;
   await api.createRule(token, {
-    keyword: formData.get('keyword'),
-    concept_label: formData.get('concept_label'),
+    keyword: keyword.trim() || null,
+    concept_label: concept_label.trim() || null,
     category: formData.get('category'),
     card_account_id: card_account_id || null,
     cardholder: cardholder || null,

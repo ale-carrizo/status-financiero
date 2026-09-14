@@ -181,18 +181,32 @@ router.get('/cashflow', async (req, res) => {
     rows.push({ id: ob.id, label: ob.label, type: ob.type, cells });
   }
 
-  const totals = months.map((m, i) =>
-    rows.reduce(
-      (acc, r) => ({
-        ars: acc.ars + r.cells[i].ars,
-        usd: acc.usd + r.cells[i].usd,
-        usd_ars: acc.usd_ars + r.cells[i].usd_ars,
-      }),
-      { ars: 0, usd: 0, usd_ars: 0 }
-    )
-  );
+  // Los ingresos (sueldos, extras, etc.) se cargan como una obligación manual más (mismo
+  // modelo, tipo INCOME) pero se muestran y totalizan aparte: no son un gasto, así que no
+  // entran en "Total" — en cambio se restan de él para armar el Saldo del mes.
+  const expenseRows = rows.filter((r) => r.type !== 'INCOME');
+  const incomeRows = rows.filter((r) => r.type === 'INCOME');
 
-  res.json({ months, rows, totals, current_month: monthLabel(baseYear, baseMonth) });
+  function sumRows(rowSet) {
+    return months.map((m, i) =>
+      rowSet.reduce(
+        (acc, r) => ({
+          ars: acc.ars + r.cells[i].ars,
+          usd: acc.usd + r.cells[i].usd,
+          usd_ars: acc.usd_ars + r.cells[i].usd_ars,
+        }),
+        { ars: 0, usd: 0, usd_ars: 0 }
+      )
+    );
+  }
+
+  const totals = sumRows(expenseRows);
+  const incomeTotals = sumRows(incomeRows);
+  const balance = months.map((m, i) => ({
+    ars: incomeTotals[i].ars + incomeTotals[i].usd_ars - (totals[i].ars + totals[i].usd_ars),
+  }));
+
+  res.json({ months, rows, totals, incomeTotals, balance, current_month: monthLabel(baseYear, baseMonth) });
 });
 
 module.exports = router;

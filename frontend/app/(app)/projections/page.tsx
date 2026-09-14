@@ -12,6 +12,7 @@ const TYPE_LABEL: Record<string, string> = {
   CARD_AUTO: 'Tarjetas (automático)',
   LOAN: 'Préstamos',
   MANUAL_CARD: 'Tarjetas manuales',
+  INCOME: 'Ingresos',
 };
 
 export default async function ProjectionsPage() {
@@ -23,7 +24,7 @@ export default async function ProjectionsPage() {
     api.getPlannedPurchases(token),
   ]);
 
-  const groups: { type: string; rows: typeof cashflow.rows }[] = ['CARD_AUTO', 'LOAN', 'MANUAL_CARD'].map(
+  const groups: { type: string; rows: typeof cashflow.rows }[] = ['CARD_AUTO', 'LOAN', 'MANUAL_CARD', 'INCOME'].map(
     (type) => ({ type, rows: cashflow.rows.filter((r) => r.type === type) })
   );
 
@@ -124,23 +125,43 @@ export default async function ProjectionsPage() {
                 </td>
               ))}
             </tr>
+            <tr className="border-t border-slate-200 font-bold bg-emerald-50 text-emerald-700">
+              <td className="px-4 py-2 sticky left-0 bg-emerald-50">Total Ingresos ($)</td>
+              {cashflow.incomeTotals.map((t, i) => (
+                <td key={i} className="px-3 py-2 text-right whitespace-nowrap">
+                  ${formatArs(t.ars + t.usd_ars)}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-t-2 border-slate-400 font-bold bg-slate-100">
+              <td className="px-4 py-2 sticky left-0 bg-slate-100">Saldo</td>
+              {cashflow.balance.map((b, i) => (
+                <td
+                  key={i}
+                  className={`px-3 py-2 text-right whitespace-nowrap ${b.ars < 0 ? 'text-red-600' : 'text-emerald-700'}`}
+                >
+                  ${formatArs(b.ars)}
+                </td>
+              ))}
+            </tr>
           </tbody>
         </table>
       </div>
 
       <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         <div>
-          <h2 className="text-lg font-bold mb-3">Agregar préstamo o tarjeta manual</h2>
+          <h2 className="text-lg font-bold mb-3">Agregar préstamo, tarjeta manual o ingreso</h2>
           <form action={createObligation} className="card p-5 space-y-3">
             <div>
               <label className="block text-xs font-medium mb-1">Nombre</label>
-              <input name="label" required className="input" placeholder="ej. Préstamo Casa, Visa HSBC" />
+              <input name="label" required className="input" placeholder="ej. Préstamo Casa, Sueldo Ale" />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1">Tipo</label>
               <select name="type" required className="input">
                 <option value="LOAN">Préstamo</option>
                 <option value="MANUAL_CARD">Tarjeta (sin parser)</option>
+                <option value="INCOME">Ingreso</option>
               </select>
             </div>
             <button type="submit" className="btn btn-primary w-full">Agregar</button>

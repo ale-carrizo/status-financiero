@@ -16,8 +16,8 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { label, type } = req.body || {};
-  if (!label || !['LOAN', 'MANUAL_CARD'].includes(type)) {
-    return res.status(400).json({ error: 'label y type (LOAN|MANUAL_CARD) son requeridos' });
+  if (!label || !['LOAN', 'MANUAL_CARD', 'INCOME'].includes(type)) {
+    return res.status(400).json({ error: 'label y type (LOAN|MANUAL_CARD|INCOME) son requeridos' });
   }
   const obligation = await prisma.manualObligation.create({ data: { label, type } });
   res.status(201).json(obligation);

@@ -93,8 +93,8 @@ model Transaction {
 
 model ClassificationRule {
   id               String    @id @default(uuid())
-  keyword          String
-  concept_label    String
+  keyword          String?
+  concept_label    String?
   category         Category
   card_account_id  String?
   cardholder       String?
@@ -126,6 +126,7 @@ model PlannedPurchase {
 enum ObligationType {
   LOAN
   MANUAL_CARD
+  INCOME
 }
 
 // Deudas/tarjetas sin parser automático (préstamos UVA, tarjetas de otros bancos) que se

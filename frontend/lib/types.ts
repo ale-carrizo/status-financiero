@@ -40,8 +40,8 @@ export type Statement = {
 
 export type ClassificationRule = {
   id: string;
-  keyword: string;
-  concept_label: string;
+  keyword: string | null;
+  concept_label: string | null;
   category: Category;
   card_account_id: string | null;
   card_account?: CardAccount | null;
@@ -74,7 +74,7 @@ export type DashboardSummary = {
   consolidated: CategoryTotals;
 };
 
-export type ObligationType = 'LOAN' | 'MANUAL_CARD';
+export type ObligationType = 'LOAN' | 'MANUAL_CARD' | 'INCOME';
 
 export type ManualObligation = {
   id: string;
@@ -99,6 +99,8 @@ export type Cashflow = {
   months: string[];
   rows: CashflowRow[];
   totals: { ars: number; usd: number; usd_ars: number }[];
+  incomeTotals: { ars: number; usd: number; usd_ars: number }[];
+  balance: { ars: number }[];
   current_month: string;
 };
 
