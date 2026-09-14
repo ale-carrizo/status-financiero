@@ -66,6 +66,10 @@ export const api = {
   setManualObligationEntry: (token: string, id: string, data: unknown) =>
     apiFetch(`/manual-obligations/${id}/entries`, { method: 'PUT', body: JSON.stringify(data) }, token),
 
+  getObligationGroups: (token: string) => apiFetch('/obligation-groups', {}, token),
+  createObligationGroup: (token: string, data: unknown) =>
+    apiFetch('/obligation-groups', { method: 'POST', body: JSON.stringify(data) }, token),
+
   getCashflow: (token: string, back?: number, forward?: number) =>
     apiFetch(`/dashboard/cashflow?back=${back ?? 2}&forward=${forward ?? 4}`, {}, token),
 

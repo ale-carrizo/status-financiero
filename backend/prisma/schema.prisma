@@ -123,21 +123,33 @@ model PlannedPurchase {
   @@map("planned_purchases")
 }
 
-enum ObligationType {
-  LOAN
-  MANUAL_CARD
-  INCOME
+// Tipos de fila del Flujo de Caja para obligaciones manuales (Préstamos, Tarjetas manuales,
+// Ingresos, y cualquier otro que el usuario cree desde la UI con "+ Crear nuevo tipo"). Antes
+// era un enum fijo; se volvió una tabla para que el usuario pueda agregar los suyos sin tocar
+// código. `key` es lo que se guarda en ManualObligation.type (referencia "blanda", sin FK, para
+// no tener que migrar la columna). `is_income` decide si suma como ingreso o como gasto en el
+// cálculo del Saldo.
+model ObligationGroup {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  label      String
+  is_income  Boolean  @default(false)
+  is_builtin Boolean  @default(false)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+
+  @@map("obligation_groups")
 }
 
 // Deudas/tarjetas sin parser automático (préstamos UVA, tarjetas de otros bancos) que se
 // cargan a mano mes a mes — mismo espíritu que la planilla de flujo de caja que ya usaba
 // el usuario, pero conviviendo en el dashboard con las tarjetas que sí parseamos.
 model ManualObligation {
-  id         String         @id @default(uuid())
+  id         String   @id @default(uuid())
   label      String
-  type       ObligationType
-  is_active  Boolean        @default(true)
-  created_at DateTime       @default(now())
+  type       String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
 
   entries ManualObligationEntry[]
 

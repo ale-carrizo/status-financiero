@@ -2,31 +2,35 @@ import { Fragment } from 'react';
 import { getToken } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { formatArs, formatMonto, formatPeriod, formatPeriodShort } from '@/lib/format';
-import type { CardAccount, PlannedPurchase, Cashflow } from '@/lib/types';
+import type { CardAccount, PlannedPurchase, Cashflow, ObligationGroup } from '@/lib/types';
 import { createPlannedPurchase, createObligation } from './actions';
 import DeletePurchaseButton from './DeletePurchaseButton';
 import DeleteObligationButton from './DeleteObligationButton';
 import EditableCell from './EditableCell';
-
-const TYPE_LABEL: Record<string, string> = {
-  CARD_AUTO: 'Tarjetas (automático)',
-  LOAN: 'Préstamos',
-  MANUAL_CARD: 'Tarjetas manuales',
-  INCOME: 'Ingresos',
-};
+import TypeSelectWithCreate from './TypeSelectWithCreate';
 
 export default async function ProjectionsPage() {
   const token = (await getToken())!;
 
-  const [cashflow, cards, plannedPurchases]: [Cashflow, CardAccount[], PlannedPurchase[]] = await Promise.all([
+  const [cashflow, cards, plannedPurchases, obligationGroups]: [
+    Cashflow,
+    CardAccount[],
+    PlannedPurchase[],
+    ObligationGroup[],
+  ] = await Promise.all([
     api.getCashflow(token),
     api.getCards(token),
     api.getPlannedPurchases(token),
+    api.getObligationGroups(token),
   ]);
 
-  const groups: { type: string; rows: typeof cashflow.rows }[] = ['CARD_AUTO', 'LOAN', 'MANUAL_CARD', 'INCOME'].map(
-    (type) => ({ type, rows: cashflow.rows.filter((r) => r.type === type) })
-  );
+  const TYPE_LABEL: Record<string, string> = { CARD_AUTO: 'Tarjetas (automático)' };
+  for (const g of obligationGroups) TYPE_LABEL[g.key] = g.label;
+
+  const groups: { type: string; rows: typeof cashflow.rows }[] = [
+    'CARD_AUTO',
+    ...obligationGroups.map((g) => g.key),
+  ].map((type) => ({ type, rows: cashflow.rows.filter((r) => r.type === type) }));
 
   return (
     <div>
@@ -158,11 +162,7 @@ export default async function ProjectionsPage() {
             </div>
             <div>
               <label className="block text-xs font-medium mb-1">Tipo</label>
-              <select name="type" required className="input">
-                <option value="LOAN">Préstamo</option>
-                <option value="MANUAL_CARD">Tarjeta (sin parser)</option>
-                <option value="INCOME">Ingreso</option>
-              </select>
+              <TypeSelectWithCreate groups={obligationGroups} />
             </div>
             <button type="submit" className="btn btn-primary w-full">Agregar</button>
           </form>

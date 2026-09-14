@@ -182,10 +182,14 @@ router.get('/cashflow', async (req, res) => {
   }
 
   // Los ingresos (sueldos, extras, etc.) se cargan como una obligación manual más (mismo
-  // modelo, tipo INCOME) pero se muestran y totalizan aparte: no son un gasto, así que no
-  // entran en "Total" — en cambio se restan de él para armar el Saldo del mes.
-  const expenseRows = rows.filter((r) => r.type !== 'INCOME');
-  const incomeRows = rows.filter((r) => r.type === 'INCOME');
+  // modelo, con un ObligationGroup marcado is_income) pero se muestran y totalizan aparte: no
+  // son un gasto, así que no entran en "Total" — en cambio se restan de él para armar el
+  // Saldo del mes. "type" puede ser cualquier ObligationGroup que el usuario haya creado, no
+  // solo los 3 con los que arrancó la app.
+  const obligationGroups = await prisma.obligationGroup.findMany();
+  const incomeTypes = new Set(obligationGroups.filter((g) => g.is_income).map((g) => g.key));
+  const expenseRows = rows.filter((r) => !incomeTypes.has(r.type));
+  const incomeRows = rows.filter((r) => incomeTypes.has(r.type));
 
   function sumRows(rowSet) {
     return months.map((m, i) =>

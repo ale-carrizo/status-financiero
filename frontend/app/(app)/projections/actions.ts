@@ -23,9 +23,20 @@ export async function deletePlannedPurchase(id: string) {
 
 export async function createObligation(formData: FormData) {
   const token = (await getToken())!;
+  let type = formData.get('type') as string;
+
+  if (type === '__new__') {
+    const newTypeLabel = formData.get('new_type_label') as string;
+    const group = await api.createObligationGroup(token, {
+      label: newTypeLabel,
+      is_income: formData.get('new_type_is_income') === 'true',
+    });
+    type = group.key;
+  }
+
   await api.createManualObligation(token, {
     label: formData.get('label'),
-    type: formData.get('type'),
+    type,
   });
   revalidatePath('/projections');
 }

@@ -74,7 +74,18 @@ export type DashboardSummary = {
   consolidated: CategoryTotals;
 };
 
-export type ObligationType = 'LOAN' | 'MANUAL_CARD' | 'INCOME';
+// El "type" de una obligación es la key de un ObligationGroup — ya no un enum fijo, el usuario
+// puede crear los suyos desde la UI ("+ Crear nuevo tipo").
+export type ObligationType = string;
+
+export type ObligationGroup = {
+  id: string;
+  key: string;
+  label: string;
+  is_income: boolean;
+  is_builtin: boolean;
+  sort_order: number;
+};
 
 export type ManualObligation = {
   id: string;

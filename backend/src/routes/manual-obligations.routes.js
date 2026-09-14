@@ -16,9 +16,9 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { label, type } = req.body || {};
-  if (!label || !['LOAN', 'MANUAL_CARD', 'INCOME'].includes(type)) {
-    return res.status(400).json({ error: 'label y type (LOAN|MANUAL_CARD|INCOME) son requeridos' });
-  }
+  if (!label || !type) return res.status(400).json({ error: 'label y type son requeridos' });
+  const group = await prisma.obligationGroup.findUnique({ where: { key: type } });
+  if (!group) return res.status(400).json({ error: `No existe el tipo "${type}"` });
   const obligation = await prisma.manualObligation.create({ data: { label, type } });
   res.status(201).json(obligation);
 });

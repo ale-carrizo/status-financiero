@@ -14,6 +14,7 @@ const rulesRoutes = require('./routes/rules.routes');
 const transactionsRoutes = require('./routes/transactions.routes');
 const plannedPurchasesRoutes = require('./routes/planned-purchases.routes');
 const manualObligationsRoutes = require('./routes/manual-obligations.routes');
+const obligationGroupsRoutes = require('./routes/obligation-groups.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const { prisma } = require('./config/db');
 const { serializeDecimalsMiddleware } = require('./lib/serialize');
@@ -59,6 +60,7 @@ app.use('/api/rules', rulesRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/planned-purchases', plannedPurchasesRoutes);
 app.use('/api/manual-obligations', manualObligationsRoutes);
+app.use('/api/obligation-groups', obligationGroupsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 app.use((err, req, res, next) => {
