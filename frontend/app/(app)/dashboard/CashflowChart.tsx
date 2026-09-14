@@ -29,16 +29,21 @@ export default function CashflowChart({ data }: { data: CashflowMonth[] }) {
   const barW = Math.min(bandW * 0.22, 22);
   const gap = barW * 0.25;
 
-  const gridFracs = [0, 0.25, 0.5, 0.75, 1];
+  // Grilla anclada en 0 (no fracciones parejas de [domainMin, domainMax], que dejarían la
+  // línea del "0" real etiquetada con un valor distinto de cero cuando el rango no es simétrico).
+  const gridValues = [
+    ...(domainMin < 0 ? [domainMin, domainMin / 2] : []),
+    0,
+    ...(domainMax > 0 ? [domainMax / 2, domainMax] : []),
+  ];
 
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Ingresos, gastos y saldo por mes" className="w-full">
-        {gridFracs.map((f) => {
-          const val = domainMin + span * f;
+        {gridValues.map((val) => {
           const yy = y(val);
           return (
-            <g key={f}>
+            <g key={val}>
               <line x1={PAD_LEFT} x2={W - PAD_RIGHT} y1={yy} y2={yy} stroke="#e2e8f0" strokeWidth={1} />
               <text x={PAD_LEFT - 8} y={yy + 3} textAnchor="end" fontSize={10} fill="#94a3b8">
                 {formatArsCompact(val)}
