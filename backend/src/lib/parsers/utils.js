@@ -1,11 +1,20 @@
 // Utilidades compartidas por los 4 parsers de resúmenes.
 
-// "37.463,21" -> 37463.21 ; "-4.801,06" -> -4801.06
+// "37.463,21" -> 37463.21 ; "-4.801,06" -> -4801.06 ; "655.807,35-" -> -655807.35
+// (Cordobesa pone el signo negativo DESPUÉS del monto en vez de antes, a diferencia de
+// todos los demás bancos ya soportados).
 function toNumber(raw) {
   if (raw === null || raw === undefined) return 0;
-  const cleaned = String(raw).trim().replace(/\./g, '').replace(',', '.');
+  let str = String(raw).trim();
+  let negative = false;
+  if (str.endsWith('-')) {
+    negative = true;
+    str = str.slice(0, -1).trim();
+  }
+  const cleaned = str.replace(/\./g, '').replace(',', '.');
   const n = parseFloat(cleaned);
-  return Number.isNaN(n) ? 0 : n;
+  if (Number.isNaN(n)) return 0;
+  return negative ? -Math.abs(n) : n;
 }
 
 // Extrae el primer monto en dólares de una línea: "U$S 1.741,19" -> 1741.19

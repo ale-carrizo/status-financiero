@@ -12,6 +12,7 @@ enum BankProfile {
   AMEX_SANTANDER
   MASTERCARD_GALICIA
   VISA_GALICIA
+  CORDOBESA
 }
 
 enum Category {

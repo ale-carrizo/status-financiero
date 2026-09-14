@@ -21,6 +21,8 @@ const NOISE_LINE_RE = new RegExp(
     '^Resumen N',
     '^Tarjeta Cr[eé]dito',
     '^JOSE ALEJANDRO CARRIZO',
+    '^DEBORA ALEJANDRA CONTRERAS',
+    '^\\s*Consumidor Final',
     '^\\s*Monotributo',
     '^BARRIO',
     '^Resumen de tarjeta de credito',
@@ -103,22 +105,26 @@ function reconstructRows(lines) {
 }
 
 const CARD_SECTION_END_RE = /^TARJETA\s+(\d{4})\s+Total Consumos de\s+(.+?)\s+(-?[\d.,]+,\d{2})(-?[\d.,]+,\d{2})?$/i;
-const MOVEMENT_RE = /^(\d{2}-\d{2}-\d{2})?\s*[*K]?\s*(.*?)(?:\s(\d{2})\/(\d{2}))?\s*(\d{6})\s*(-?[\d.,]+)\s*$/;
+// El comprobante en dólares viene con un monto "original" en moneda extranjera pegado antes
+// del comprobante (ej. "...USD        1,99 8455211,99" = USD, 1,99 original, comprobante
+// 845521, monto real 1,99) — sin este grupo opcional, el monto quedaba mal asignado a pesos.
+const MOVEMENT_RE = /^(\d{2}-\d{2}-\d{2})?\s*[*K]?\s*(.*?)(?:\s(\d{2})\/(\d{2}))?(?:(USD)\s+[\d.,]+\s+)?\s*(\d{6})\s*(-?[\d.,]+)\s*$/;
 const TAX_LINE_RE = /^(\d{2}-\d{2}-\d{2})?\s*(.*?)\s*\$?\s*(-?[\d.,]+,\d{2})\s*$/;
 
 function parseMovementRow(row) {
   const m = MOVEMENT_RE.exec(row.replace(/\s+/g, ' ').trim());
   if (!m) return null;
-  const [, fechaStr, descRaw, cuotaActual, cuotaTotal, , montoStr] = m;
+  const [, fechaStr, descRaw, cuotaActual, cuotaTotal, currency, , montoStr] = m;
   const descripcion = descRaw.trim();
   if (!descripcion) return null;
+  const monto = toNumber(montoStr);
   return {
     fecha: fechaStr ? parseDateNumeric(fechaStr) : null,
     descripcion,
     cuota_actual: cuotaActual ? parseInt(cuotaActual, 10) : null,
     cuota_total: cuotaTotal ? parseInt(cuotaTotal, 10) : null,
-    monto_ars: toNumber(montoStr),
-    monto_usd: 0,
+    monto_ars: currency ? 0 : monto,
+    monto_usd: currency ? monto : 0,
   };
 }
 
